@@ -1,13 +1,17 @@
 const expect = require('chai').expect;
 const babel = require('babel-core');
 const plugin = require('../lib/plugin');
-const __validate__ = require('../lib/validator');
+const validator = require('../lib/validator');
 
 function transpile(source) {
     return babel.transform(source, {
         plugins: [plugin]
     }).code;
 }
+
+var __validate__ = validator(function (message) {
+    throw new Error(message);
+});
 
 describe('Transpiler', function () {
     it('disallows four-letter-f-words in values', function () {
