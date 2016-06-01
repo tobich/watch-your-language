@@ -1,6 +1,12 @@
 import React from 'react';
 import Ace from 'react-ace';
 import ReactDOM from 'react-dom';
+import {Tabs, Tab} from 'material-ui/Tabs';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import injectTapEventPlugin from 'react-tap-event-plugin';
+
+injectTapEventPlugin();
 
 const babel = require('babel-core');
 import plugin from '../lib/plugin';
@@ -22,22 +28,49 @@ const outputStyle = {
     'error': {
         font: aceFont,
         color: 'red'
+    },
+    'console': {
+        position: 'fixed',
+        width: '100%',
+        height: '33vh',
+        bottom: 0,
+        zIndex: 999,
+        background: 'white'
     }
 };
+
+const sampleCode1 = `
+    const a = "flame";
+    const b = "flippers";
+    const c = "furry";
+    
+    console.log(a,b,c);
+`;
+
+const sampleCode2 = `
+    function f(word) {
+        return "f" + word;
+    }
+    
+    var arr = ["lame", "lippers", "urry" ];
+    
+    var result = arr
+        .map(f)
+        .forEach(word => console.log(word));
+`;
 
 class Playground extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            code: '',
+            code: sampleCode1,
             output: []
         }
     }
 
-    onChange(code) {
-        let compiledCode;
-        const setState = this.setState.bind(this);
+    runCode(code) {
         const output = [];
+        let compiledCode;
         const __validate__ = validator(function (message) {
             output.push({
                 level: 'error',
@@ -49,36 +82,79 @@ class Playground extends React.Component {
             log(...args) {
                 output.push({
                     level: 'log',
-                    text: args.join('')
+                    text: args.join(' ')
                 });
             }
         };
         try {
             compiledCode = transpile(code);
+        } catch(err) {
+            return false;
+        }
+        try {
             eval(compiledCode);
-        } catch (err) {}
-
-        this.setState({
+        } catch (err) {
+        }
+        return this.setState({
             output,
             code
         });
+    }
 
+    onChange(code) {
+        if(this.runCode(code)) {
+            this.setState({
+                code
+            });
+        }
     }
 
     componentDidMount() {
-        ReactDOM.findDOMNode(this.refs.editor).focus();
+        const editor = ReactDOM.findDOMNode(this.refs.editor);
+        editor.focus();
+        editor.addEventListener('keydown', event => {
+            if(event.ctrlKey) {
+                if(event.keyCode === 49) {
+                    this.setState({
+                        code: sampleCode1
+                    });
+                    this.runCode(sampleCode1);
+                }
+                if(event.keyCode === 50) {
+                    this.setState({
+                        code: sampleCode2
+                    });
+                    this.runCode(sampleCode2);
+                }
+            }
+        });
+        this.runCode(this.state.code);
     }
 
     render() {
         return (
-            <div>
-                <Ace ref="editor" value={this.state.code} mode="javascript" theme="github" onChange={this.onChange.bind(this)}/>
+            <MuiThemeProvider muiTheme={getMuiTheme()}>
                 <div>
-                    {
-                        this.state.output.map(out => <p style={outputStyle[out.level]}>{out.level} &gt; {out.text}</p>)
-                    }
+                    <Tabs>
+                        <Tab label="Source">
+                            <Ace ref="editor" value={this.state.code} mode="javascript" theme="github"
+                                 onChange={this.onChange.bind(this)}
+                                 width="100%"
+                                 height="100vh"
+                            />
+                        </Tab>
+                        <Tab label="Target">
+                            <pre>{transpile(this.state.code)}</pre>
+                        </Tab>
+                    </Tabs>
+                    <div style={outputStyle.console}>
+                        {
+                            this.state.output.map(out => <p
+                                style={outputStyle[out.level]}>{out.level} &gt; {out.text}</p>)
+                        }
+                    </div>
                 </div>
-            </div>
+            </MuiThemeProvider>
         );
     }
 }
