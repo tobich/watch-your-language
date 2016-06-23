@@ -36,6 +36,10 @@ const outputStyle = {
         bottom: 0,
         zIndex: 999,
         background: 'white'
+    },
+    'code': {
+        font: aceFont,
+        marginLeft: 48
     }
 };
 
@@ -144,7 +148,7 @@ class Playground extends React.Component {
                             />
                         </Tab>
                         <Tab label="Target">
-                            <pre>{transpile(this.state.code)}</pre>
+                            <pre style={outputStyle.code}>{transpile(this.state.code)}</pre>
                         </Tab>
                     </Tabs>
                     <div style={outputStyle.console}>
